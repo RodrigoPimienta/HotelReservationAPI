@@ -36,13 +36,21 @@ public class Hotel {
     @Column(nullable = false, length = 10)
     private String postalCode;
 
-    @JsonManagedReference
+    @JsonManagedReference("hotel-amenities")
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HotelAmenity> amenities;
 
-    @JsonManagedReference
+    @JsonManagedReference("hotel-images")
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HotelImage> images;
+
+    @JsonManagedReference("hotel-room-types")
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HotelRoomType> roomTypes;
+
+    @JsonManagedReference("hotel-rooms")
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HotelRoom> rooms;
 
     @ManyToMany(mappedBy = "hotels", cascade = CascadeType.ALL)
     private Set<User> owners;

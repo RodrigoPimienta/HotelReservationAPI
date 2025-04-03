@@ -27,7 +27,7 @@ public class User {
     @Enumerated(value = EnumType.STRING)
     private Role role;
 
-    @JsonManagedReference
+    @JsonManagedReference("user-business") // Explicitly named reference
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserBusiness business;
 
@@ -113,19 +113,5 @@ public class User {
 
     public void setHotels(Set<Hotel> hotels) {
         this.hotels = hotels;
-    }
-
-    @Override
-    public String toString() {
-        return "User{" +
-                "userId=" + userId +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", role=" + role +
-                ", business=" + business +
-                ", hotels=" + hotels +
-                '}';
     }
 }

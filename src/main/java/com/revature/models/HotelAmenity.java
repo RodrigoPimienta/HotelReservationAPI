@@ -25,7 +25,7 @@ public class HotelAmenity {
     @Column(nullable = false)
     private String url;
 
-    @JsonBackReference
+    @JsonBackReference("hotel-amenities")
     @ManyToOne
     @JoinColumn(name = "hotel_id")
     private Hotel hotel;

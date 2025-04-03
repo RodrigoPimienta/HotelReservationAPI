@@ -20,7 +20,7 @@ public class UserBusiness {
     @Column(nullable = false, length = 20)
     private String taxCode;
 
-    @JsonBackReference
+    @JsonBackReference("user-business") // Matching name
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;

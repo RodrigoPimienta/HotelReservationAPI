@@ -26,9 +26,10 @@ public class HotelImage {
     @Column(nullable = false)
     private String url;
 
-    @JsonBackReference
+
+    @JsonBackReference("hotel-images")
     @ManyToOne
-    @JoinColumn(name ="hotel_id")
+    @JoinColumn(name = "hotel_id")
     private Hotel hotel;
 
     public HotelImage(){
