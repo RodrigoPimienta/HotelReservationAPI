@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -55,7 +54,7 @@ public class HotelService {
 
         Hotel hotelCreated = hotelDAO.save(hotelTobeCreated);
 
-        Set<Hotel> userHotels = new HashSet<>();
+        Set<Hotel> userHotels = returnedUser.getHotels();
         userHotels.add(hotelCreated);
         returnedUser.setHotels(userHotels);
         userDAO.save(returnedUser);
