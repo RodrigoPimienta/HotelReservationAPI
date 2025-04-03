@@ -1,5 +1,6 @@
 package com.revature.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -24,14 +25,14 @@ public class HotelAmenity {
     @Column(nullable = false)
     private String url;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "hotel_id")
     private Hotel hotel;
 
     public HotelAmenity(){}
 
-    public HotelAmenity(int hotelAmenityId, String name, String description, String url, Hotel hotel) {
-        this.hotelAmenityId = hotelAmenityId;
+    public HotelAmenity(String name, String description, String url, Hotel hotel) {
         this.name = name;
         this.description = description;
         this.url=url;

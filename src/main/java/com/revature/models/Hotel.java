@@ -1,6 +1,7 @@
 package com.revature.models;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -35,9 +36,11 @@ public class Hotel {
     @Column(nullable = false, length = 10)
     private String postalCode;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HotelAmenity> amenities;
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<HotelImage> images;
 

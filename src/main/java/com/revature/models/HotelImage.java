@@ -1,6 +1,7 @@
 package com.revature.models;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -25,6 +26,7 @@ public class HotelImage {
     @Column(nullable = false)
     private String url;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name ="hotel_id")
     private Hotel hotel;
