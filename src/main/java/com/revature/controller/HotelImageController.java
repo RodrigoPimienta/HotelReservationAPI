@@ -39,7 +39,7 @@ public class HotelImageController {
             throw new ForbiddenActionException("You must be a teacher to access this");
         }
 
-        if (!hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to add images");
         }
 
@@ -81,7 +81,7 @@ public class HotelImageController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (!hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
@@ -112,7 +112,7 @@ public class HotelImageController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (!hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
             throw new ForbiddenActionException("You must be the owner of the hotel to delete images");
         }
 

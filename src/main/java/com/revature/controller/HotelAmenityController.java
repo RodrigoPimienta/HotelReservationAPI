@@ -39,7 +39,7 @@ public class HotelAmenityController {
             throw new ForbiddenActionException("You must be a teacher to access this");
         }
 
-        if (!hotelAmenityService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (hotelAmenityService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to add amenities");
         }
 
@@ -81,7 +81,7 @@ public class HotelAmenityController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (!hotelAmenityService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (hotelAmenityService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
@@ -112,7 +112,7 @@ public class HotelAmenityController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (!hotelAmenityService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (hotelAmenityService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
             throw new ForbiddenActionException("You must be the owner fo this hotel delete amenities");
         }
 

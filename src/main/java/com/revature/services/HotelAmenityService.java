@@ -51,10 +51,10 @@ public class HotelAmenityService {
             User user = userOptional.get();
             Set<Hotel> hotels = user.getHotels();
 
-            return hotels.stream().anyMatch(owner -> owner.getHotelId() == hotelId);
+            return hotels.stream().noneMatch(owner -> owner.getHotelId() == hotelId);
         }
 
-        return false;
+        return true;
     }
 
     // CREATE
