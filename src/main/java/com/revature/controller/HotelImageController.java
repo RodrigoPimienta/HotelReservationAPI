@@ -1,7 +1,10 @@
 package com.revature.controller;
 
+import com.revature.exceptions.ForbiddenActionException;
 import com.revature.exceptions.ResourceNotFoundException;
+import com.revature.exceptions.UnauthenticatedException;
 import com.revature.models.HotelImage;
+import com.revature.models.Role;
 import com.revature.services.HotelImageService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,17 +28,22 @@ public class HotelImageController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public HotelImage createImageHandler(@PathVariable int hotelId, @RequestBody HotelImage image, HttpSession session) {
+    public List<HotelImage> createImageHandler(@PathVariable int hotelId, @RequestBody List<HotelImage> images, HttpSession session) {
 
-//        if (session.getAttribute("userId") == null){
-//            throw new UnauthenticatedException("User is not authenticated");
-//        }
-//___
-//        // I need to make sure the role of the user is a teacher
-//        if (session.getAttribute("role") != Role.OWNER){
-//            throw new ForbiddenActionException("You must be a teacher to access this");
-//        }
-        return hotelImageService.createHotelImages(hotelId, image);
+        if (session.getAttribute("userId") == null){
+            throw new UnauthenticatedException("User is not authenticated");
+        }
+
+        // I need to make sure the role of the user is a teacher
+        if (session.getAttribute("role") != Role.OWNER){
+            throw new ForbiddenActionException("You must be a teacher to access this");
+        }
+
+        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+            throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
+        }
+
+        return hotelImageService.createHotelImages(hotelId, images);
     }
 
 
@@ -61,16 +69,20 @@ public class HotelImageController {
 
     @PutMapping("{hotelImageId}")
     public Optional<HotelImage> updateHotelHandler(@PathVariable int hotelId,@PathVariable int hotelImageId, @RequestBody HotelImage updatedHotel, HttpSession session) {
-//        if (session.getAttribute("userId") == null) {
-//            throw new UnauthenticatedException("User is not authenticated");
-//        }
-//
-//        if (session.getAttribute("role") != Role.OWNER) {
-//            throw new ForbiddenActionException("You must be an owner to modify this hotel");
-//        }
+        if (session.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("User is not authenticated");
+        }
+
+        if (session.getAttribute("role") != Role.OWNER) {
+            throw new ForbiddenActionException("You must be an owner to modify this hotel");
+        }
 
         if(hotelImageService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
+        }
+
+        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+            throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
         if(hotelImageService.checkHotelImageExisting(hotelImageId)){
@@ -88,16 +100,20 @@ public class HotelImageController {
     @DeleteMapping("{hotelImageId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteHotelHandler(@PathVariable int hotelId, @PathVariable int hotelImageId, HttpSession session) {
-//        if (session.getAttribute("userId") == null) {
-//            throw new UnauthenticatedException("User is not authenticated");
-//        }
-//
-//        if (session.getAttribute("role") != Role.OWNER) {
-//            throw new ForbiddenActionException("You must be an owner to delete this hotel");
-//        }
+        if (session.getAttribute("userId") == null) {
+            throw new UnauthenticatedException("User is not authenticated");
+        }
+
+        if (session.getAttribute("role") != Role.OWNER) {
+            throw new ForbiddenActionException("You must be an owner to delete this hotel");
+        }
 
         if(hotelImageService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
+        }
+
+        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+            throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
         if(hotelImageService.checkHotelImageExisting(hotelImageId)){
