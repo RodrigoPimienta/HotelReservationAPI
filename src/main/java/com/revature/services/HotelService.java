@@ -2,22 +2,31 @@ package com.revature.services;
 
 
 import com.revature.dto.request.HotelFilterDTO;
+import com.revature.exceptions.ResourceNotFoundException;
 import com.revature.models.Hotel;
+import com.revature.models.User;
 import com.revature.repos.HotelDAO;
+import com.revature.repos.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
+@Transactional
 public class HotelService {
 
     private final HotelDAO hotelDAO;
+    private final UserDAO userDAO;
 
     @Autowired
-    public HotelService(HotelDAO hotelDAO) {
+    public HotelService(HotelDAO hotelDAO, UserDAO userDAO) {
         this.hotelDAO = hotelDAO;
+        this.userDAO =userDAO;
     }
 
     // Availability
@@ -25,9 +34,33 @@ public class HotelService {
         return hotelDAO.findById(hotelId).isEmpty();
     }
 
+    public boolean isUserOwnerOfHotel(int userId, int hotelId) {
+        Optional<User> userOptional = userDAO.findById(userId);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            Set<Hotel> hotels = user.getHotels();
+
+            return hotels.stream().anyMatch(owner -> owner.getHotelId() == hotelId);
+        }
+
+        return false;
+    }
+
     // CREATE
-    public Hotel createHotel(Hotel hotelTobeCreated){
-        return hotelDAO.save(hotelTobeCreated);
+    public Hotel createHotel(int userId, Hotel hotelTobeCreated){
+        // We need to make sure the user exists
+        User returnedUser = userDAO.findById(userId).orElseThrow(
+                () -> new ResourceNotFoundException("No User found with id: " + userId));
+
+        Hotel hotelCreated = hotelDAO.save(hotelTobeCreated);
+
+        Set<Hotel> userHotels = new HashSet<>();
+        userHotels.add(hotelCreated);
+        returnedUser.setHotels(userHotels);
+        userDAO.save(returnedUser);
+
+        return hotelCreated;
     }
 
     // RETRIEVE ALL
