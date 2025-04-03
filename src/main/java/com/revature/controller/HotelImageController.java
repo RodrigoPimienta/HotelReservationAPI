@@ -39,8 +39,8 @@ public class HotelImageController {
             throw new ForbiddenActionException("You must be a teacher to access this");
         }
 
-        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
-            throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
+        if (!hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+            throw new ForbiddenActionException("You must be the owner of this hotel to add images");
         }
 
         return hotelImageService.createHotelImages(hotelId, images);
@@ -81,7 +81,7 @@ public class HotelImageController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (!hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
@@ -99,7 +99,7 @@ public class HotelImageController {
 
     @DeleteMapping("{hotelImageId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelHandler(@PathVariable int hotelId, @PathVariable int hotelImageId, HttpSession session) {
+    public void deleteHotelImageHandler(@PathVariable int hotelId, @PathVariable int hotelImageId, HttpSession session) {
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }
@@ -112,8 +112,8 @@ public class HotelImageController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
-            throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
+        if (!hotelImageService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+            throw new ForbiddenActionException("You must be the owner of the hotel to delete images");
         }
 
         if(hotelImageService.checkHotelImageExisting(hotelImageId)){

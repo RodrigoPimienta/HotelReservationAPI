@@ -73,7 +73,7 @@ public class HotelController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (hotelService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (!hotelService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
@@ -95,8 +95,8 @@ public class HotelController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (hotelService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
-            throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
+        if (!hotelService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+            throw new ForbiddenActionException("You must be the owner to delete this hotel");
         }
 
         hotelService.deleteHotel(hotelId);
