@@ -62,7 +62,7 @@ public class HotelRoomController {
     }
 
     @GetMapping("{hotelRoomId}")
-    public HotelRoomWithRoomTypeDTO getHotelHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId){
+    public HotelRoomWithRoomTypeDTO getHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId){
         if(hotelRoomService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
@@ -72,7 +72,7 @@ public class HotelRoomController {
     }
 
     @PutMapping("{hotelRoomId}")
-    public Optional<HotelRoom> updateHotelHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoom updatedHotel, HttpSession session) {
+    public Optional<HotelRoom> updateHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoom updatedHotel, HttpSession session) {
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }
@@ -103,7 +103,7 @@ public class HotelRoomController {
 
     @DeleteMapping("{hotelRoomId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
+    public void deleteHoteRoomlHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }
