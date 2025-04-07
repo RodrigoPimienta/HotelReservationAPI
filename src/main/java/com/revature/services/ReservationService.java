@@ -5,6 +5,7 @@ import com.revature.dto.request.ReservationFilterDTO;
 import com.revature.dto.request.ReservationUpdateStatusDTO;
 import com.revature.dto.request.RoomFilterDTO;
 
+import com.revature.dto.response.ReservationWithDetailsDTO;
 import com.revature.dto.response.RoomWithDetailsDTO;
 import com.revature.exceptions.ForbiddenActionException;
 import com.revature.exceptions.InvalidRequestBodyException;
@@ -15,6 +16,7 @@ import com.revature.repos.ReservationDAO;
 import com.revature.repos.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.revature.util.SendGridUtil;
 
 import java.text.ParseException;
 
@@ -39,10 +41,10 @@ public class ReservationService {
 
 
     @Autowired
-    public ReservationService(ReservationDAO reservationDAO, UserDAO userDAO, HotelRoomDAO hotelRoomDAO){
-        this.reservationDAO=reservationDAO;
-        this.userDAO=userDAO;
-        this.hotelRoomDAO=hotelRoomDAO;
+    public ReservationService(ReservationDAO reservationDAO, UserDAO userDAO, HotelRoomDAO hotelRoomDAO) {
+        this.reservationDAO = reservationDAO;
+        this.userDAO = userDAO;
+        this.hotelRoomDAO = hotelRoomDAO;
     }
 
     public boolean isUserNotOwnerOfHotelReservation(int userId, int reservationId) {
@@ -96,7 +98,7 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
 
-    public Reservation createReservation(int userId, ReservationCreateDTO reservationToBeCreated) {
+    public ReservationWithDetailsDTO createReservation(int userId, ReservationCreateDTO reservationToBeCreated) {
         try {
             // Parse check-in date and set time to 9:00 AM
             LocalDate checkInDate = LocalDate.parse(reservationToBeCreated.getCheckIn(), DATE_FORMATTER);
@@ -147,33 +149,42 @@ public class ReservationService {
             reservation.setRoom(roomSelected);
             reservation.setUser(user);
 
-            return reservationDAO.save(reservation);
+            Reservation reservationCreated = reservationDAO.save(reservation);
+            ReservationWithDetailsDTO reservationWithDetailsDTO = new ReservationWithDetailsDTO(reservationCreated);
+            createReservationEmail(reservationWithDetailsDTO);
+            return reservationWithDetailsDTO;
+
         } catch (DateTimeParseException e) {
             throw new InvalidRequestBodyException("Invalid date format. Please use yyyy-MM-dd");
         }
     }
 
-    public Reservation getReservation(int userId, Role role, int reservationId){
+    public ReservationWithDetailsDTO getReservation(int userId, Role role, int reservationId) {
         Reservation reservation = reservationDAO.findById(reservationId).orElseThrow(
                 () -> new ResourceNotFoundException("No reservation found with id: " + reservationId));
 
         if (role == Role.OWNER && isUserNotOwnerOfHotelReservation(userId, reservationId)) {
-            throw  new ForbiddenActionException("You must be the owner of the reservation hotel to retrieve this reservation");
+            throw new ForbiddenActionException("You must be the owner of the reservation hotel to retrieve this reservation");
         }
 
-        if(role == Role.USER && reservation.getUser().getUserId() != userId) {
+        if (role == Role.USER && reservation.getUser().getUserId() != userId) {
             throw new ForbiddenActionException("You are not allow to retrieve this reservation");
         }
 
-        return reservation;
+        return new ReservationWithDetailsDTO(reservation);
     }
 
-    public List<Reservation> getUserReservations(int userId){
-        return reservationDAO.findByUser_UserId(userId);
+    public List<ReservationWithDetailsDTO> getUserReservations(int userId) {
+        List<Reservation> reservations = reservationDAO.findByUser_UserId(userId);
+
+        return reservations.stream()
+                .map(ReservationWithDetailsDTO::new)
+                .collect(Collectors.toList());
     }
 
-    public List<Reservation> getReservationsWithFilter(int userId, ReservationFilterDTO reservationFilterDTO) throws ParseException {
-        return reservationDAO.findReservationsWithFilters(
+    public List<ReservationWithDetailsDTO> getReservationsWithFilter(int userId, ReservationFilterDTO reservationFilterDTO) throws ParseException {
+
+        List<Reservation> reservations = reservationDAO.findReservationsWithFilters(
                 reservationFilterDTO.getReservationId(),
                 userId,
                 reservationFilterDTO.getHotelId(),
@@ -182,23 +193,132 @@ public class ReservationService {
                 reservationFilterDTO.getStatus(),
                 reservationFilterDTO.isOwner()
         );
+
+        return reservations.stream()
+                .map(ReservationWithDetailsDTO::new)
+                .collect(Collectors.toList());
     }
 
-    public Reservation updateReservationStatus(int reservationId, ReservationUpdateStatusDTO reservationUpdateStatusDTO){
+    public Reservation updateReservationStatus(int reservationId, ReservationUpdateStatusDTO reservationUpdateStatusDTO) {
         Reservation reservation = reservationDAO.findById(reservationId).orElseThrow(
                 () -> new ResourceNotFoundException("No reservation found with id: " + reservationId));
 
-        if(reservation.getStatus() != ReservationStatus.PENDING){
-            throw  new ForbiddenActionException("You can not change the status of a reservation which has been accepted or rejected");
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ForbiddenActionException("You can not change the status of a reservation which has been accepted or rejected");
         }
 
-        if(reservationUpdateStatusDTO.getStatus() != ReservationStatus.ACCEPT && reservationUpdateStatusDTO.getStatus() != ReservationStatus.REJECT ){
-            throw  new InvalidRequestBodyException("Invalid status value. Status must be part of the catalog");
+        if (reservationUpdateStatusDTO.getStatus() != ReservationStatus.ACCEPT && reservationUpdateStatusDTO.getStatus() != ReservationStatus.REJECT) {
+            throw new InvalidRequestBodyException("Invalid status value. Status must be part of the catalog");
+        }
+
+        if (reservationUpdateStatusDTO.getStatus() == ReservationStatus.REJECT && reservationUpdateStatusDTO.getComment().isEmpty()) {
+            throw new InvalidRequestBodyException("Invalid comment value. Comment must be fill in when you want to reject a reservation");
         }
 
         reservation.setStatus(reservationUpdateStatusDTO.getStatus()); // accepted or rejected
-        return reservationDAO.save(reservation);
 
+        Reservation reservationUpdated = reservationDAO.save(reservation);
+
+        if (reservationUpdateStatusDTO.getStatus() == ReservationStatus.ACCEPT) {
+            sendReservationApprovedEmail(new ReservationWithDetailsDTO(reservationUpdated));
+        } else {
+            sendReservationRejectedEmail(new ReservationWithDetailsDTO(reservationUpdated));
+        }
+        return reservationUpdated;
     }
 
+    public void createReservationEmail(ReservationWithDetailsDTO reservation) {
+        String subject = "Reservation Confirmation";
+        SendGridUtil sendGridUtil = new SendGridUtil();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, h:mm a z");
+
+        ZoneId mexicoCityZone = ZoneId.of("America/Mexico_City");
+
+        Date checkInDate = reservation.getCheckIn();
+        Date checkOutDate = reservation.getCheckOut();
+
+        ZonedDateTime checkInZonedDateTime = ZonedDateTime.ofInstant(checkInDate.toInstant(), mexicoCityZone);
+        ZonedDateTime checkOutZonedDateTime = ZonedDateTime.ofInstant(checkOutDate.toInstant(), mexicoCityZone);
+
+        String formattedCheckIn = checkInZonedDateTime.format(formatter);
+        String formattedCheckOut = checkOutZonedDateTime.format(formatter);
+
+        String content = "Dear Customer,\n\n" +
+                "Your reservation has been confirmed with the following details:\n\n" +
+                "Hotel: " + reservation.getRoom().getHotel().getName() + "\n" +
+                "Room: " + reservation.getRoom().getNum() + "\n" +
+                "Room Type: " + reservation.getRoom().getRoomType().getName() + "\n" +
+                "Check-in Date: " + formattedCheckIn + "\n" +
+                "Check-out Date: " + formattedCheckOut + "\n" +
+                "Number guests: $" + reservation.getTotalGuest() + "\n\n" +
+                "Total Price: " + reservation.getTotal() + "\n\n" +
+                "Thank you for your reservation!";
+
+        sendGridUtil.SendEmail(subject, reservation.getUser().getEmail(), content);
+    }
+
+    public void sendReservationApprovedEmail(ReservationWithDetailsDTO reservation) {
+        String subject = "Reservation Approved";
+        SendGridUtil sendGridUtil = new SendGridUtil();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, h:mm a z");
+
+        ZoneId mexicoCityZone = ZoneId.of("America/Mexico_City");
+
+        Date checkInDate = reservation.getCheckIn();
+        Date checkOutDate = reservation.getCheckOut();
+
+        ZonedDateTime checkInZonedDateTime = ZonedDateTime.ofInstant(checkInDate.toInstant(), mexicoCityZone);
+        ZonedDateTime checkOutZonedDateTime = ZonedDateTime.ofInstant(checkOutDate.toInstant(), mexicoCityZone);
+
+        String formattedCheckIn = checkInZonedDateTime.format(formatter);
+        String formattedCheckOut = checkOutZonedDateTime.format(formatter);
+
+        String content = "Dear Customer,\n\n" +
+                "Your reservation has been approved by the hotel.\n\n" +
+                "Here are your reservation details:\n\n" +
+                "Hotel: " + reservation.getRoom().getHotel().getName() + "\n" +
+                "Room: " + reservation.getRoom().getNum() + "\n" +
+                "Room Type: " + reservation.getRoom().getRoomType().getName() + "\n" +
+                "Check-in Date: " + formattedCheckIn + "\n" +
+                "Check-out Date: " + formattedCheckOut + "\n" +
+                "Number guests: " + reservation.getTotalGuest() + "\n" +
+                "Total Price: $" + reservation.getTotal() + "\n\n" +
+                "We look forward to welcoming you!\n" +
+                "Thank you.";
+
+        sendGridUtil.SendEmail(subject, reservation.getUser().getEmail(), content);
+    }
+
+    public void sendReservationRejectedEmail(ReservationWithDetailsDTO reservation) {
+        String subject = "Reservation Rejected";
+        SendGridUtil sendGridUtil = new SendGridUtil();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, h:mm a z");
+
+        ZoneId mexicoCityZone = ZoneId.of("America/Mexico_City");
+
+        Date checkInDate = reservation.getCheckIn();
+        Date checkOutDate = reservation.getCheckOut();
+
+        ZonedDateTime checkInZonedDateTime = ZonedDateTime.ofInstant(checkInDate.toInstant(), mexicoCityZone);
+        ZonedDateTime checkOutZonedDateTime = ZonedDateTime.ofInstant(checkOutDate.toInstant(), mexicoCityZone);
+
+        String formattedCheckIn = checkInZonedDateTime.format(formatter);
+        String formattedCheckOut = checkOutZonedDateTime.format(formatter);
+
+        String content = "Dear Customer,\n\n" +
+                "We regret to inform you that your reservation has been rejected by the hotel.\n\n" +
+                "Rejection Reason: " + reservation.getComment() + "\n\n" +
+                "Here are the reservation details:\n\n" +
+                "Hotel: " + reservation.getRoom().getHotel().getName() + "\n" +
+                "Room: " + reservation.getRoom().getNum() + "\n" +
+                "Room Type: " + reservation.getRoom().getRoomType().getName() + "\n" +
+                "Check-in Date: " + formattedCheckIn + "\n" +
+                "Check-out Date: " + formattedCheckOut + "\n" +
+                "Number guests: " + reservation.getTotalGuest() + "\n" +
+                "Total Price: $" + reservation.getTotal() + "\n\n" +
+                "We apologize for any inconvenience this may cause.\n" +
+                "Thank you.";
+
+        sendGridUtil.SendEmail(subject, reservation.getUser().getEmail(), content);
+    }
 }
