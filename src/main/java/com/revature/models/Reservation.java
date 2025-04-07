@@ -26,6 +26,9 @@ public class Reservation {
     @Column(nullable = false, columnDefinition = "NUMERIC(10,2) CHECK (total > 0)")
     private Double total;
 
+    @Column(nullable = true, columnDefinition =  "text")
+    private String comment;
+
     @Enumerated(value = EnumType.STRING)
     private ReservationStatus status;
 
@@ -94,6 +97,14 @@ public class Reservation {
         return status;
     }
 
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
     public void setStatus(ReservationStatus status) {
         this.status = status;
     }
@@ -113,4 +124,5 @@ public class Reservation {
     public void setRoom(HotelRoom room) {
         this.room = room;
     }
+
 }

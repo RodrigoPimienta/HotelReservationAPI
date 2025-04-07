@@ -4,6 +4,7 @@ import com.revature.dto.request.ReservationCreateDTO;
 import com.revature.dto.request.ReservationFilterDTO;
 import com.revature.dto.request.ReservationUpdateStatusDTO;
 import com.revature.dto.request.RoomFilterDTO;
+import com.revature.dto.response.ReservationWithDetailsDTO;
 import com.revature.dto.response.RoomWithDetailsDTO;
 import com.revature.exceptions.*;
 import com.revature.models.Reservation;
@@ -32,7 +33,7 @@ public class ReservationController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public Reservation createReservationByRoomTypeHandler(@RequestBody ReservationCreateDTO reservationCreateDTO, HttpSession session){
+    public ReservationWithDetailsDTO createReservationByRoomTypeHandler(@RequestBody ReservationCreateDTO reservationCreateDTO, HttpSession session){
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }
@@ -46,7 +47,7 @@ public class ReservationController {
     }
 
     @GetMapping("user")
-    public List<Reservation> getUserReservationHandler( HttpSession session){
+    public List<ReservationWithDetailsDTO> getUserReservationHandler( HttpSession session){
 
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
@@ -60,7 +61,7 @@ public class ReservationController {
     }
 
     @GetMapping("{reservationId}")
-    public Reservation getHotelHandler(@PathVariable int reservationId,  HttpSession session){
+    public ReservationWithDetailsDTO getReservationHandler(@PathVariable int reservationId,  HttpSession session){
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }
@@ -72,7 +73,7 @@ public class ReservationController {
     }
 
     @PostMapping("/filter")
-    public List<Reservation> filterReservationsHandler(@RequestBody ReservationFilterDTO filter, HttpSession session) throws ParseException {
+    public List<ReservationWithDetailsDTO> filterReservationsHandler(@RequestBody ReservationFilterDTO filter, HttpSession session) throws ParseException {
 
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
