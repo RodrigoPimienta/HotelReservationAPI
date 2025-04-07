@@ -103,7 +103,7 @@ public class HotelRoomController {
 
     @DeleteMapping("{hotelRoomId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHoteRoomlHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
+    public void deleteHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }
