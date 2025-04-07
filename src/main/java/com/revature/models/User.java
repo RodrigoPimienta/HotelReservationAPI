@@ -3,6 +3,7 @@ package com.revature.models;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -30,6 +31,10 @@ public class User {
     @JsonManagedReference("user-business") // Explicitly named reference
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserBusiness business;
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference("user-reservations")
+    private List<Reservation> reservations;
 
     @ManyToMany
     @JoinTable(

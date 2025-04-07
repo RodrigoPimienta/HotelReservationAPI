@@ -4,14 +4,11 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "hotel_rooms")
 public class HotelRoom {
-//    hotel_room_id serial primary key,
-//    hotel_id int references hotels,
-//    hotel_room_type_id references hotel_room_types,
-//    num int unique not null,
-//    status varchar(50) check ( status in ('AVAILABLE', 'UNAVAILABLE','MAINTEINES'))
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,6 +26,10 @@ public class HotelRoom {
     @ManyToOne
     @JoinColumn(name = "hotel_id")
     private Hotel hotel;
+
+    @OneToMany(mappedBy = "room")
+    @JsonManagedReference("room-reservations")
+    private List<Reservation> reservations;
 
     public HotelRoom(){}
 
@@ -69,4 +70,5 @@ public class HotelRoom {
     public void setHotel(Hotel hotel) {
         this.hotel = hotel;
     }
+
 }
