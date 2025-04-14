@@ -3,10 +3,8 @@ package com.revature.services;
 import com.revature.dto.request.ReservationCreateDTO;
 import com.revature.dto.request.ReservationFilterDTO;
 import com.revature.dto.request.ReservationUpdateStatusDTO;
-import com.revature.dto.request.RoomFilterDTO;
 
 import com.revature.dto.response.ReservationWithDetailsDTO;
-import com.revature.dto.response.RoomWithDetailsDTO;
 import com.revature.exceptions.ForbiddenActionException;
 import com.revature.exceptions.InvalidRequestBodyException;
 import com.revature.exceptions.ResourceNotFoundException;
@@ -35,16 +33,18 @@ public class ReservationService {
     private final ReservationDAO reservationDAO;
     private final UserDAO userDAO;
     private final HotelRoomDAO hotelRoomDAO;
+    private final SendGridUtil sendGridUtil;
 
     private static final ZoneId MEXICO_CITY_ZONE = ZoneId.of("America/Mexico_City");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 
     @Autowired
-    public ReservationService(ReservationDAO reservationDAO, UserDAO userDAO, HotelRoomDAO hotelRoomDAO) {
+    public ReservationService(ReservationDAO reservationDAO, UserDAO userDAO, HotelRoomDAO hotelRoomDAO, SendGridUtil sendGridUtil) {
         this.reservationDAO = reservationDAO;
         this.userDAO = userDAO;
         this.hotelRoomDAO = hotelRoomDAO;
+        this.sendGridUtil= sendGridUtil;
     }
 
     public boolean isUserNotOwnerOfHotelReservation(int userId, int reservationId) {
@@ -52,50 +52,6 @@ public class ReservationService {
                 reservationId, userId, null, null, null, null, true);
         System.out.println(reservations);
         return reservations.isEmpty();
-    }
-
-    public List<RoomWithDetailsDTO> getRoomsByFilters(RoomFilterDTO roomFilterDTO) {
-        Integer hotelId = roomFilterDTO.getHotelId() == 0 ? null : roomFilterDTO.getHotelId();
-        String country = roomFilterDTO.getCountry() == null || roomFilterDTO.getCountry().isEmpty() ? null : roomFilterDTO.getCountry();
-        String state = roomFilterDTO.getState() == null || roomFilterDTO.getState().isEmpty() ? null : roomFilterDTO.getState();
-        String city = roomFilterDTO.getCity() == null || roomFilterDTO.getCity().isEmpty() ? null : roomFilterDTO.getCity();
-        Integer roomId = roomFilterDTO.getRoomId() == 0 ? null : roomFilterDTO.getRoomId();
-        Integer roomTypeId = roomFilterDTO.getRoomTypeId() == 0 ? null : roomFilterDTO.getRoomTypeId();
-        Integer guestNumber = roomFilterDTO.getGuestNumber() == 0 ? null : roomFilterDTO.getGuestNumber();
-        Double price = roomFilterDTO.getPrice() == 0.0 ? null : roomFilterDTO.getPrice();
-
-        // Initialize with current date and default times
-        LocalDate today = LocalDate.now();
-
-        // Parse check-in date or use today with 9:00 AM
-        LocalDate checkInDate;
-        if (roomFilterDTO.getCheckIn() == null || roomFilterDTO.getCheckIn().isEmpty()) {
-            checkInDate = today;
-        } else {
-            checkInDate = LocalDate.parse(roomFilterDTO.getCheckIn(), DATE_FORMATTER);
-        }
-        ZonedDateTime checkInDateTime = checkInDate.atTime(9, 0).atZone(MEXICO_CITY_ZONE);
-
-        // Parse check-out date or use tomorrow with 3:00 PM
-        LocalDate checkOutDate;
-        if (roomFilterDTO.getCheckOut() == null || roomFilterDTO.getCheckOut().isEmpty()) {
-            checkOutDate = today.plusDays(1);
-        } else {
-            checkOutDate = LocalDate.parse(roomFilterDTO.getCheckOut(), DATE_FORMATTER);
-        }
-        ZonedDateTime checkOutDateTime = checkOutDate.atTime(15, 0).atZone(MEXICO_CITY_ZONE);
-
-        // Convert to java.util.Date for the DAO method
-        Date checkIn = Date.from(checkInDateTime.toInstant());
-        Date checkOut = Date.from(checkOutDateTime.toInstant());
-
-        List<HotelRoom> rooms = hotelRoomDAO.findAvailableRooms(
-                hotelId, country, state, city, roomId, roomTypeId,
-                checkIn, checkOut, guestNumber, price);
-
-        return rooms.stream()
-                .map(RoomWithDetailsDTO::new)
-                .collect(Collectors.toList());
     }
 
     public ReservationWithDetailsDTO createReservation(int userId, ReservationCreateDTO reservationToBeCreated) {
@@ -184,13 +140,18 @@ public class ReservationService {
 
     public List<ReservationWithDetailsDTO> getReservationsWithFilter(int userId, ReservationFilterDTO reservationFilterDTO) throws ParseException {
 
+        Integer reservationId = reservationFilterDTO.getReservationId() == 0 ? null : reservationFilterDTO.getReservationId();
+        Integer hotelId = reservationFilterDTO.getHotelId() == 0 ? null : reservationFilterDTO.getHotelId();
+        Integer roomTypeId = reservationFilterDTO.getRoomTypeId() == 0 ? null : reservationFilterDTO.getRoomTypeId();
+        Integer roomId = reservationFilterDTO.getRoomId() == 0 ? null : reservationFilterDTO.getRoomId();
+
         List<Reservation> reservations = reservationDAO.findReservationsWithFilters(
-                reservationFilterDTO.getReservationId(),
+                reservationId,
                 userId,
-                reservationFilterDTO.getHotelId(),
-                reservationFilterDTO.getRoomTypeId(),
-                reservationFilterDTO.getRoomId(),
-                reservationFilterDTO.getStatus(),
+                hotelId,
+                roomTypeId,
+                roomId,
+                null,
                 reservationFilterDTO.isOwner()
         );
 
@@ -211,9 +172,9 @@ public class ReservationService {
             throw new InvalidRequestBodyException("Invalid status value. Status must be part of the catalog");
         }
 
-        if (reservationUpdateStatusDTO.getStatus() == ReservationStatus.REJECT && reservationUpdateStatusDTO.getComment().isEmpty()) {
-            throw new InvalidRequestBodyException("Invalid comment value. Comment must be fill in when you want to reject a reservation");
-        }
+//        if (reservationUpdateStatusDTO.getStatus() == ReservationStatus.ACCEPT && reservationUpdateStatusDTO.getComment().isEmpty()) {
+//            throw new InvalidRequestBodyException("Invalid comment value. Comment must be fill in when you want to reject a reservation");
+//        }
 
         reservation.setStatus(reservationUpdateStatusDTO.getStatus()); // accepted or rejected
 
@@ -229,7 +190,6 @@ public class ReservationService {
 
     public void createReservationEmail(ReservationWithDetailsDTO reservation) {
         String subject = "Reservation Confirmation";
-        SendGridUtil sendGridUtil = new SendGridUtil();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, h:mm a z");
 
         ZoneId mexicoCityZone = ZoneId.of("America/Mexico_City");
@@ -250,8 +210,8 @@ public class ReservationService {
                 "Room Type: " + reservation.getRoom().getRoomType().getName() + "\n" +
                 "Check-in Date: " + formattedCheckIn + "\n" +
                 "Check-out Date: " + formattedCheckOut + "\n" +
-                "Number guests: $" + reservation.getTotalGuest() + "\n\n" +
-                "Total Price: " + reservation.getTotal() + "\n\n" +
+                "Number guests: " + reservation.getTotalGuest() + "\n\n" +
+                "Total Price: $" + reservation.getTotal() + "\n\n" +
                 "Thank you for your reservation!";
 
         sendGridUtil.SendEmail(subject, reservation.getUser().getEmail(), content);
@@ -259,7 +219,6 @@ public class ReservationService {
 
     public void sendReservationApprovedEmail(ReservationWithDetailsDTO reservation) {
         String subject = "Reservation Approved";
-        SendGridUtil sendGridUtil = new SendGridUtil();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, h:mm a z");
 
         ZoneId mexicoCityZone = ZoneId.of("America/Mexico_City");
@@ -291,7 +250,6 @@ public class ReservationService {
 
     public void sendReservationRejectedEmail(ReservationWithDetailsDTO reservation) {
         String subject = "Reservation Rejected";
-        SendGridUtil sendGridUtil = new SendGridUtil();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy, h:mm a z");
 
         ZoneId mexicoCityZone = ZoneId.of("America/Mexico_City");

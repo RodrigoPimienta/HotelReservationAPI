@@ -131,10 +131,19 @@ public class HotelRoomService {
                 .collect(Collectors.toList());
     }
     // PUT
-    public Optional<HotelRoom> updateHotelRoom(int hotelId,int HotelRoomId, HotelRoom updateHotelRoom) {
+    public Optional<HotelRoom> updateHotelRoom(int hotelId,int HotelRoomId, HotelRoomDTO updateHotelRoom) {
         return hotelRoomDAO.findByHotelRoomIdAndHotel_HotelId(HotelRoomId,hotelId).map(HotelRoom -> {
+
+            Optional<HotelRoomType> roomTypeOptional = hotelRoomTypeDAO.findById(updateHotelRoom.getHotelRoomTypeId());
+
+            if (roomTypeOptional.isEmpty()) {
+                throw new ResourceNotFoundException("No HotelRoomType with id: " + updateHotelRoom.getHotelRoomTypeId());
+            }
+
+            HotelRoomType roomType = roomTypeOptional.get();
+
             HotelRoom.setNum(updateHotelRoom.getNum());
-            HotelRoom.setRoomType(updateHotelRoom.getRoomType());
+            HotelRoom.setRoomType(roomType);
             return hotelRoomDAO.save(HotelRoom);
         });
     }
