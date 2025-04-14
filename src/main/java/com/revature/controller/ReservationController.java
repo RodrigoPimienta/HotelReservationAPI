@@ -3,9 +3,7 @@ package com.revature.controller;
 import com.revature.dto.request.ReservationCreateDTO;
 import com.revature.dto.request.ReservationFilterDTO;
 import com.revature.dto.request.ReservationUpdateStatusDTO;
-import com.revature.dto.request.RoomFilterDTO;
 import com.revature.dto.response.ReservationWithDetailsDTO;
-import com.revature.dto.response.RoomWithDetailsDTO;
 import com.revature.exceptions.*;
 import com.revature.models.Reservation;
 import com.revature.models.Role;
@@ -19,7 +17,7 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
-
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("reservations")
 public class ReservationController {
@@ -87,22 +85,6 @@ public class ReservationController {
 
         return reservationService.getReservationsWithFilter((int) session.getAttribute("userId"),filter);
     }
-
-    @PostMapping("/rooms/filter")
-    public List<RoomWithDetailsDTO> filterRoomsHandler(@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
-
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-
-        if (session.getAttribute("role") != Role.USER) {
-            roomFilterDTO.setOwner(true);
-        }
-
-        return reservationService.getRoomsByFilters(roomFilterDTO);
-    }
-
 
     @PutMapping("{reservationId}")
     public Reservation updateReservationStatusHandler(@PathVariable int reservationId, @RequestBody ReservationUpdateStatusDTO reservationUpdateStatusDTO, HttpSession session){

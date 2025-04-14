@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("hotels/{hotelId}/rooms")
 public class HotelRoomController {
@@ -72,7 +73,7 @@ public class HotelRoomController {
     }
 
     @PutMapping("{hotelRoomId}")
-    public Optional<HotelRoom> updateHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoom updatedHotel, HttpSession session) {
+    public Optional<HotelRoom> updateHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoomDTO updatedHotel, HttpSession session) {
         if (session.getAttribute("userId") == null) {
             throw new UnauthenticatedException("User is not authenticated");
         }

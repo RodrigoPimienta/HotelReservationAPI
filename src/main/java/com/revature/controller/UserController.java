@@ -1,6 +1,8 @@
 package com.revature.controller;
 
 
+import com.revature.dto.response.UserDTO;
+import com.revature.dto.response.UserWithDetailsDTO;
 import com.revature.exceptions.*;
 import com.revature.models.User;
 import com.revature.services.UserService;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.Optional;
 
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("users")
 public class UserController {
@@ -30,7 +33,7 @@ public class UserController {
     }
 
     @PostMapping("login")
-    public User loginHandler(@RequestBody User user, HttpSession session){
+    public UserWithDetailsDTO loginHandler(@RequestBody User user, HttpSession session){
 
         Optional<User> potentialUser = userService.login(user);
 
@@ -39,7 +42,7 @@ public class UserController {
             session.setAttribute("userId", potentialUser.get().getUserId());
             session.setAttribute("role", potentialUser.get().getRole());
 
-            return potentialUser.get();
+            return new UserWithDetailsDTO(potentialUser.get());
         }
 
         throw new InvalidCredentialsException("Username or Password is incorrect");
