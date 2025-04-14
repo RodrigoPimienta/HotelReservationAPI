@@ -22,7 +22,7 @@ public class HotelAmenity {
     @Column(nullable = false)
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String url;
 
     @JsonBackReference("hotel-amenities")
