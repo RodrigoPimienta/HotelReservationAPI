@@ -2,8 +2,9 @@ package com.revature.dto.response;
 
 import com.revature.models.Role;
 import com.revature.models.User;
+import com.revature.models.UserBusiness;
 
-public class UserDTO {
+public class UserWithDetailsDTO {
     private int userId;
 
     private String firstName;
@@ -16,14 +17,18 @@ public class UserDTO {
 
     private Role role;
 
-    public UserDTO(){}
+    private UserBusiness business;
 
-    public UserDTO(User user){
+    public UserWithDetailsDTO(){}
+
+
+    public UserWithDetailsDTO(User user){
         this.userId=user.getUserId();
         this.firstName= user.getFirstName();
         this.lastName= user.getLastName();
         this.email= user.getEmail();
         this.role=user.getRole();
+        this.business=user.getBusiness();
     }
 
     public int getUserId() {
@@ -72,5 +77,13 @@ public class UserDTO {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public UserBusiness getUserBusiness() {
+        return business;
+    }
+
+    public void setUserBusiness(UserBusiness userBusiness) {
+        this.business = userBusiness;
     }
 }
