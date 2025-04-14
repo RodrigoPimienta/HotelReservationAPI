@@ -19,9 +19,9 @@ public interface HotelRoomDAO extends JpaRepository<HotelRoom, Integer> {
             "JOIN FETCH hr.roomType rt " +
             "JOIN FETCH hr.hotel h " +
             "WHERE (:hotelId IS NULL OR h.hotelId = :hotelId) " +
-            "AND (:country IS NULL OR h.Country = :country) " +
-            "AND (:state IS NULL OR h.State = :state) " +
-            "AND (:city IS NULL OR h.City = :city) " +
+            "AND (:country IS NULL OR h.country = :country) " +
+            "AND (:state IS NULL OR h.state = :state) " +
+            "AND (:city IS NULL OR h.city = :city) " +
             "AND (:roomId IS NULL OR hr.hotelRoomId = :roomId) " +
             "AND (:roomTypeId IS NULL OR rt.hotelRoomTypeId = :roomTypeId) " +
             "AND (:guests IS NULL OR rt.maxGuest >= :guests) " +
