@@ -4,25 +4,30 @@ import com.sendgrid.*;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.Properties;
 
+@Component
 public class SendGridUtil {
 
+    @Value("${SENDGRID_API_KEY}")
+    private String sendgridApiKey;
+
+    @Value("${SENDGRID_EMAIL_FROM}")
+    private String sendgridEmailFrom;
+
     public void SendEmail(String subject, String emailTo, String text) {
-        Properties props = new Properties();
-
         try{
-            props.load(new FileReader("src/main/resources/application.properties"));
 
-            SendGrid sg = new SendGrid(props.getProperty("SENDGRID_API_KEY"));
-            Email from = new Email(props.getProperty("SENDGRID_EMAIL_FROM"));
+            SendGrid sg = new SendGrid(this.sendgridApiKey);
+            Email from = new Email(this.sendgridEmailFrom);
             Email to = new Email(emailTo);
             Content content = new Content("text/plain", text);
             Mail mail = new Mail(from, subject, to, content);
+
 
             Request request = new Request();
 
