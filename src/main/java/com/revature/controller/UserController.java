@@ -1,14 +1,14 @@
 package com.revature.controller;
 
 
-import com.revature.dto.response.UserDTO;
-import com.revature.dto.response.UserWithDetailsDTO;
+import com.revature.dto.response.LoginDTO;
 import com.revature.exceptions.*;
 import com.revature.models.User;
 import com.revature.services.UserService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -33,28 +33,20 @@ public class UserController {
     }
 
     @PostMapping("login")
-    public UserWithDetailsDTO loginHandler(@RequestBody User user, HttpSession session){
+    public LoginDTO loginHandler(@RequestBody User user, HttpSession session){
 
         Optional<User> potentialUser = userService.login(user);
 
         if (potentialUser.isPresent()){
-
-            session.setAttribute("userId", potentialUser.get().getUserId());
-            session.setAttribute("role", potentialUser.get().getRole());
-
-            return new UserWithDetailsDTO(potentialUser.get());
+            return new LoginDTO(potentialUser.get(), JwtUtil.generateToken(user.getEmail()));
         }
 
         throw new InvalidCredentialsException("Username or Password is incorrect");
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PutMapping()
     public User updateHotelHandler(@RequestBody User user, HttpSession session){
-
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
         return userService.updateUser( (int) session.getAttribute("userId"),user);
     }
 
