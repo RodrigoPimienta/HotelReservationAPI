@@ -17,30 +17,27 @@ import java.util.List;
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserDAO userDAO;
+    private final UserDAO userRepository;
 
-    public UserDetailsServiceImpl(UserDAO userDAO) {
-        this.userDAO = userDAO;
+    public UserDetailsServiceImpl(UserDAO userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userDAO.findUserByEmail(email)
+    public CustomUserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+
 
         Collection<? extends GrantedAuthority> authorities = getAuthorities(user.getRole().toString());
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                authorities
-        );
+        return new CustomUserDetails(user, authorities);
+
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(String role) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-        //authorities.add(new SimpleGrantedAuthority(role));
         return authorities;
     }
 }
