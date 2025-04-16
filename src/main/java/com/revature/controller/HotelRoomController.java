@@ -9,17 +9,19 @@ import com.revature.exceptions.UnauthenticatedException;
 import com.revature.models.HotelRoom;
 import com.revature.models.Role;
 
+import com.revature.security.CustomUserDetails;
 import com.revature.services.HotelRoomService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("hotels/{hotelId}/rooms")
 public class HotelRoomController {
@@ -31,20 +33,12 @@ public class HotelRoomController {
         this.hotelRoomService = hotelRoomService;
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public List<HotelRoom> createRoomHandler(@PathVariable int hotelId, @RequestBody List<HotelRoomDTO> Rooms, HttpSession session) {
+    public List<HotelRoom> createRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable int hotelId, @RequestBody List<HotelRoomDTO> Rooms, HttpSession session) {
 
-        if (session.getAttribute("userId") == null){
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        // I need to make sure the role of the user is a teacher
-        if (session.getAttribute("role") != Role.OWNER){
-            throw new ForbiddenActionException("You must be a teacher to access this");
-        }
-
-        if (hotelRoomService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
+        if (hotelRoomService.isUserOwnerOfHotel(userDetails.getUserId(), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to add room s");
         }
 
@@ -72,21 +66,14 @@ public class HotelRoomController {
                 ()-> new ResourceNotFoundException("No hotelRoom with id: " + hotelRoomId));
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @PutMapping("{hotelRoomId}")
-    public Optional<HotelRoom> updateHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoomDTO updatedHotel, HttpSession session) {
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        if (session.getAttribute("role") != Role.OWNER) {
-            throw new ForbiddenActionException("You must be an owner to modify this hotel");
-        }
-
+    public Optional<HotelRoom> updateHotelRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoomDTO updatedHotel, HttpSession session) {
         if(hotelRoomService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (hotelRoomService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
+        if (hotelRoomService.isUserOwnerOfHotel(userDetails.getUserId(), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
@@ -102,22 +89,16 @@ public class HotelRoomController {
         return hotelRoomService.updateHotelRoom(hotelId,hotelRoomId, updatedHotel);
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @DeleteMapping("{hotelRoomId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelRoomHandler(@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        if (session.getAttribute("role") != Role.OWNER) {
-            throw new ForbiddenActionException("You must be an owner to delete this hotel");
-        }
+    public void deleteHotelRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
 
         if(hotelRoomService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (hotelRoomService.isUserOwnerOfHotel((int) session.getAttribute("userId"), hotelId)){
+        if (hotelRoomService.isUserOwnerOfHotel(userDetails.getUserId(), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to delete room s");
         }
 

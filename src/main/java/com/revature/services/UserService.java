@@ -25,44 +25,6 @@ public class UserService {
         this.userBusinessDAO=userBusinessDAO;
     }
 
-    public User register(User userToBeRegistered){
-        Optional<User> potentialUser = userDAO.findUserByEmail(userToBeRegistered.getEmail());
-
-        if (potentialUser.isPresent()){
-            throw new EmailAlreadyTakenException("Email: " + userToBeRegistered.getEmail() + " is already taken!");
-        }
-
-        // TODO validation for email and password
-        // TODO ENCRYPT PASSWORD
-
-        if(userToBeRegistered.getBusiness() == null && userToBeRegistered.getRole() == Role.OWNER){
-            throw new InvalidRequestBodyException("Business information is required for OWNER role.");
-        }
-
-        return userDAO.save(userToBeRegistered);
-    }
-
-    // TODO Login
-    public Optional<User> login(User userCredentials){
-
-        // Look up the user by their username;
-        Optional<User> potentialUser = userDAO.findUserByEmail(userCredentials.getEmail());
-
-        // Validate the password match if the user is present
-        if (potentialUser.isPresent()){
-            User returnedUser = potentialUser.get();
-
-            // Verify the user password matches
-            if (returnedUser.getPassword().equals(userCredentials.getPassword())){
-                return potentialUser;
-            }
-        }
-
-        return Optional.empty();
-
-    }
-
-
     public User updateUser(int userId, User updatedUser) {
         Optional<User> existingUserOptional = userDAO.findById(userId);
 
@@ -107,10 +69,6 @@ public class UserService {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }
 
-        userDAO.deleteById(userId);
-    }
-
-    public void deleteHotel(int userId) {
         userDAO.deleteById(userId);
     }
 

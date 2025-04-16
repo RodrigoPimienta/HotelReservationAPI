@@ -10,20 +10,23 @@ import com.revature.exceptions.ResourceNotFoundException;
 import com.revature.exceptions.UnauthenticatedException;
 import com.revature.models.Hotel;
 import com.revature.models.Role;
+import com.revature.security.CustomUserDetails;
 import com.revature.services.HotelService;
 import com.revature.util.SendGridUtil;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("hotels")
 public class HotelController {
@@ -35,18 +38,10 @@ public class HotelController {
         this.hotelService = hotelService;
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Hotel createHotelHandler(@RequestBody Hotel hotel, HttpSession session){
-        if (session.getAttribute("userId") == null){
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        // I need to make sure the role of the user is a teacher
-        if (session.getAttribute("role") != Role.OWNER){
-            throw new ForbiddenActionException("You must be a teacher to access this");
-        }
-
         return hotelService.createHotel((int) session.getAttribute("userId"), hotel);
     }
 
@@ -62,14 +57,9 @@ public class HotelController {
     }
 
     @PostMapping("/filter")
-    public List<Hotel> filterHotels(@RequestBody HotelFilterDTO filter, HttpSession session) {
-        if (session.getAttribute("userId") == null){
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        // I need to make sure the role of the user is a teacher
-        if (session.getAttribute("role") == Role.OWNER){
-            filter.setOwner((Integer) session.getAttribute("userId"));
+    public List<Hotel> filterHotels(@AuthenticationPrincipal CustomUserDetails userDetails,  @RequestBody HotelFilterDTO filter, HttpSession session) {
+        if (Objects.equals(userDetails.getAuthorities().toString(), Role.OWNER.toString())) {
+            filter.setOwner(userDetails.getUserId());
         }else{
             filter.setOwner(null);
         }
@@ -78,13 +68,8 @@ public class HotelController {
     }
 
     @PostMapping("/rooms/filter")
-    public List<RoomWithDetailsDTO> filterRoomsHandler(@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
-
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        if (session.getAttribute("role") != Role.USER) {
+    public List<RoomWithDetailsDTO> filterRoomsHandler(@AuthenticationPrincipal CustomUserDetails userDetails ,@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
+        if (Objects.equals(userDetails.getAuthorities().toString(), Role.OWNER.toString())) {
             roomFilterDTO.setOwner(true);
         }
 
@@ -92,13 +77,8 @@ public class HotelController {
     }
 
     @PostMapping("/roomTypes/filter")
-    public List<RoomTypeWithDetailsDTO> filterRoomTypesHandler(@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
-
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        if (session.getAttribute("role") != Role.USER) {
+    public List<RoomTypeWithDetailsDTO> filterRoomTypesHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
+        if (Objects.equals(userDetails.getAuthorities().toString(), Role.OWNER.toString())) {
             roomFilterDTO.setOwner(true);
         }
 
@@ -126,22 +106,16 @@ public class HotelController {
         return hotelService.updateHotel(hotelId, updatedHotel);
     }
 
+    @PreAuthorize("hasRole('OWNER')")
     @DeleteMapping("{hotelId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelHandler(@PathVariable int hotelId, HttpSession session) {
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        if (session.getAttribute("role") != Role.OWNER) {
-            throw new ForbiddenActionException("You must be an owner to modify this hotel");
-        }
+    public void deleteHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, HttpSession session) {
 
         if(hotelService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (!hotelService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (!hotelService.isUserOwnerOfHotel(userDetails.getUserId()  ,hotelId)){
             throw new ForbiddenActionException("You must be the owner to delete this hotel");
         }
 
