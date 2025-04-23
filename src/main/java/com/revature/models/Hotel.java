@@ -59,6 +59,17 @@ public class Hotel {
 
     }
 
+    public Hotel(int hotelId, String name, String country, String state, String city, String street, String houseNumber, String postalCode) {
+        this.hotelId = hotelId;
+        this.name = name;
+        this.country = country;
+        this.state = state;
+        this.city = city;
+        this.street = street;
+        this.houseNumber = houseNumber;
+        this.postalCode = postalCode;
+    }
+
     public Hotel(int hotelId, String name, String country, String state, String city, String street, String houseNumber, String postalCode, List<HotelAmenity> amenities, List<HotelImage> images) {
         this.hotelId = hotelId;
         this.name = name;

@@ -164,7 +164,7 @@ public class HotelService {
         // Parse check-out date or use tomorrow with 3:00 PM
         LocalDate checkOutDate;
         if (roomFilterDTO.getCheckOut() == null || roomFilterDTO.getCheckOut().isEmpty()) {
-            System.out.println("tmoroow");
+            System.out.println("tomorrow");
 
             checkOutDate = today.plusDays(1);
         } else {
