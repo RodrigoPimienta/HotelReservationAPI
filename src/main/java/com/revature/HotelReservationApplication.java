@@ -3,7 +3,7 @@ package com.revature;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
- // TEST auto deploy
+ // TEST auto deploy 2
 @SpringBootApplication
 public class HotelReservationApplication {
 
