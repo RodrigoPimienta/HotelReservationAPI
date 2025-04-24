@@ -2,12 +2,9 @@ package com.revature.controller;
 
 import com.revature.exceptions.ForbiddenActionException;
 import com.revature.exceptions.ResourceNotFoundException;
-import com.revature.exceptions.UnauthenticatedException;
 import com.revature.models.HotelImage;
-import com.revature.models.Role;
 import com.revature.security.CustomUserDetails;
 import com.revature.services.HotelImageService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +29,7 @@ public class HotelImageController {
     @PreAuthorize("hasRole('OWNER')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public List<HotelImage> createImageHandler(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable int hotelId, @RequestBody List<HotelImage> images, HttpSession session) {
+    public List<HotelImage> createImageHandler(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable int hotelId, @RequestBody List<HotelImage> images) {
 
 
         if (hotelImageService.isUserOwnerOfHotel(userDetails.getUserId(), hotelId)){
@@ -65,7 +62,7 @@ public class HotelImageController {
 
     @PreAuthorize("hasRole('OWNER')")
     @PutMapping("{hotelImageId}")
-    public Optional<HotelImage> updateHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId,@PathVariable int hotelImageId, @RequestBody HotelImage updatedHotel, HttpSession session) {
+    public Optional<HotelImage> updateHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId,@PathVariable int hotelImageId, @RequestBody HotelImage updatedHotel) {
         if(hotelImageService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
@@ -89,7 +86,7 @@ public class HotelImageController {
     @PreAuthorize("hasRole('OWNER')")
     @DeleteMapping("{hotelImageId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelImageHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelImageId, HttpSession session) {
+    public void deleteHotelImageHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelImageId) {
         if(hotelImageService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }

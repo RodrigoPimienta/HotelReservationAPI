@@ -14,8 +14,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("users")
 public class UserController {
-// @PreAuthorize("hasRole('USER') or hasRole('OWNER')")
-    //     @PreAuthorize("hasRole('USER')")
     private final UserService userService;
 
     @Autowired

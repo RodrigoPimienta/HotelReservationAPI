@@ -7,15 +7,11 @@ import com.revature.dto.response.RoomTypeWithDetailsDTO;
 import com.revature.dto.response.RoomWithDetailsDTO;
 import com.revature.exceptions.ForbiddenActionException;
 import com.revature.exceptions.ResourceNotFoundException;
-import com.revature.exceptions.UnauthenticatedException;
 import com.revature.models.Hotel;
 import com.revature.models.Role;
 import com.revature.security.CustomUserDetails;
 import com.revature.services.HotelService;
-import com.revature.util.SendGridUtil;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -41,8 +37,8 @@ public class HotelController {
     @PreAuthorize("hasRole('OWNER')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Hotel createHotelHandler(@RequestBody Hotel hotel, HttpSession session){
-        return hotelService.createHotel((int) session.getAttribute("userId"), hotel);
+    public Hotel createHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody Hotel hotel){
+        return hotelService.createHotel(userDetails.getUserId(), hotel);
     }
 
     @GetMapping
@@ -57,7 +53,7 @@ public class HotelController {
     }
 
     @PostMapping("/filter")
-    public List<Hotel> filterHotels(@AuthenticationPrincipal CustomUserDetails userDetails,  @RequestBody HotelFilterDTO filter, HttpSession session) {
+    public List<Hotel> filterHotels(@AuthenticationPrincipal CustomUserDetails userDetails,  @RequestBody HotelFilterDTO filter) {
         if (Objects.equals(userDetails.getAuthorities().toString(), Role.OWNER.toString())) {
             filter.setOwner(userDetails.getUserId());
         }else{
@@ -68,7 +64,7 @@ public class HotelController {
     }
 
     @PostMapping("/rooms/filter")
-    public List<RoomWithDetailsDTO> filterRoomsHandler(@AuthenticationPrincipal CustomUserDetails userDetails ,@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
+    public List<RoomWithDetailsDTO> filterRoomsHandler(@AuthenticationPrincipal CustomUserDetails userDetails ,@RequestBody RoomFilterDTO roomFilterDTO) throws ParseException {
         if (Objects.equals(userDetails.getAuthorities().toString(), Role.OWNER.toString())) {
             roomFilterDTO.setOwner(true);
         }
@@ -77,7 +73,7 @@ public class HotelController {
     }
 
     @PostMapping("/roomTypes/filter")
-    public List<RoomTypeWithDetailsDTO> filterRoomTypesHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@RequestBody RoomFilterDTO roomFilterDTO, HttpSession session) throws ParseException {
+    public List<RoomTypeWithDetailsDTO> filterRoomTypesHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@RequestBody RoomFilterDTO roomFilterDTO) throws ParseException {
         if (Objects.equals(userDetails.getAuthorities().toString(), Role.OWNER.toString())) {
             roomFilterDTO.setOwner(true);
         }
@@ -86,12 +82,8 @@ public class HotelController {
     }
 
     @PutMapping("{hotelId}")
-    public Optional<Hotel> updateHotelHandler(@PathVariable int hotelId, @RequestBody Hotel updatedHotel, HttpSession session) {
-        if (session.getAttribute("userId") == null) {
-            throw new UnauthenticatedException("User is not authenticated");
-        }
-
-        if (session.getAttribute("role") != Role.OWNER) {
+    public Optional<Hotel> updateHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @RequestBody Hotel updatedHotel) {
+        if (Objects.equals(userDetails.getAuthorities().toString(), Role.USER.toString())) {
             throw new ForbiddenActionException("You must be an owner to modify this hotel");
         }
 
@@ -99,7 +91,7 @@ public class HotelController {
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
 
-        if (!hotelService.isUserOwnerOfHotel((int) session.getAttribute("userId"),hotelId)){
+        if (!hotelService.isUserOwnerOfHotel(userDetails.getUserId(),hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to make updates");
         }
 
@@ -109,7 +101,7 @@ public class HotelController {
     @PreAuthorize("hasRole('OWNER')")
     @DeleteMapping("{hotelId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, HttpSession session) {
+    public void deleteHotelHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId) {
 
         if(hotelService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);

@@ -4,14 +4,11 @@ import com.revature.dto.request.HotelRoomDTO;
 import com.revature.dto.response.HotelRoomWithRoomTypeDTO;
 import com.revature.exceptions.ForbiddenActionException;
 import com.revature.exceptions.ResourceNotFoundException;
-import com.revature.exceptions.UnauthenticatedException;
 
 import com.revature.models.HotelRoom;
-import com.revature.models.Role;
 
 import com.revature.security.CustomUserDetails;
 import com.revature.services.HotelRoomService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,7 +33,7 @@ public class HotelRoomController {
     @PreAuthorize("hasRole('OWNER')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public List<HotelRoom> createRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable int hotelId, @RequestBody List<HotelRoomDTO> Rooms, HttpSession session) {
+    public List<HotelRoom> createRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable int hotelId, @RequestBody List<HotelRoomDTO> Rooms) {
 
         if (hotelRoomService.isUserOwnerOfHotel(userDetails.getUserId(), hotelId)){
             throw new ForbiddenActionException("You must be the owner of this hotel to add room s");
@@ -68,7 +65,7 @@ public class HotelRoomController {
 
     @PreAuthorize("hasRole('OWNER')")
     @PutMapping("{hotelRoomId}")
-    public Optional<HotelRoom> updateHotelRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoomDTO updatedHotel, HttpSession session) {
+    public Optional<HotelRoom> updateHotelRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelRoomId, @RequestBody HotelRoomDTO updatedHotel) {
         if(hotelRoomService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
         }
@@ -92,7 +89,7 @@ public class HotelRoomController {
     @PreAuthorize("hasRole('OWNER')")
     @DeleteMapping("{hotelRoomId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHotelRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelRoomId, HttpSession session) {
+    public void deleteHotelRoomHandler(@AuthenticationPrincipal CustomUserDetails userDetails,@PathVariable int hotelId, @PathVariable int hotelRoomId) {
 
         if(hotelRoomService.checkHotelExisting(hotelId)){
             throw new ResourceNotFoundException("No hotel with id: " + hotelId);
